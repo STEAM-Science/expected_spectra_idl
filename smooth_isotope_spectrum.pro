@@ -1,4 +1,4 @@
-pro smooth_isotope_spectrum, time = time, output_spectrum = output_spectrum, air_dens = air_dens, distance = distance, aperture = aperture, element = element, activity = activity, resolution = resolution, detector_select = detector_select, filter_thick = filter_thick, aluminum = aluminum, polyimide = polyimide, _extra = _extra
+pro smooth_isotope_spectrum, days = days, time = time, output_spectrum = output_spectrum, air_dens = air_dens, distance = distance, aperture = aperture, element = element, activity = activity, resolution = resolution, detector_select = detector_select, filter_thick = filter_thick, aluminum = aluminum, polyimide = polyimide, _extra = _extra
 
   if not keyword_set(detector_select) then detector_select=0
   
@@ -9,6 +9,28 @@ pro smooth_isotope_spectrum, time = time, output_spectrum = output_spectrum, air
   if not keyword_set(element) then begin
     message, /info, 'Please specify element'
   endif
+  
+  if not keyword_set(days) then days = 1.
+  
+  ; write a general function for this
+  
+  CASE element of
+    'Fe': begin
+      actual_activity = activity*exp(-0.00070334569*days)
+      end
+    'Be': begin
+      actual_activity = activity*exp(-0.00017915409*days)
+      end
+    'Zn': begin
+      actual_activity = activity*exp(-0.00284076713*days)
+      end
+    'Am': begin
+      actual_activity = activity*exp(-0.00000404049*days)
+      end
+    'Cd': begin
+      actual_activity = activity*exp(-0.0015825278*days)
+      end
+  ENDCASE
   
   CASE detector_select of 
 
@@ -52,7 +74,7 @@ pro smooth_isotope_spectrum, time = time, output_spectrum = output_spectrum, air
 
   ENDCASE
   
-  spectrum = area*make_isotope_spectra(edges, element = element, activity = activity, time = time)/(4.*!dpi*distance^2)
+  spectrum = area*make_isotope_spectra(edges, element = element, activity = actual_activity, time = time)/(4.*!dpi*distance^2)
   response = instrument_response(eee_mean, detector_select = detector_select, filter_thick = filter_thick, aluminum = aluminum, polyimide = polyimide)
   
   ; air attenuation function
@@ -63,8 +85,10 @@ pro smooth_isotope_spectrum, time = time, output_spectrum = output_spectrum, air
   ;ssw_rebinner, specin, edgesin, specout, edgesout
 
   ssw_rebinner, smooth_spectrum, eee, spectrum_rebinned, eee2
-
+  spectrum_rebinned = add_poisson_noise(spectrum_rebinned)
+  
   ;pause
+  
   plot,eee_mean2,spectrum_rebinned, xtitle = 'Energy(keV)', ytitle = 'Counts(photons)', _extra = _extra
   
   output_spectrum = {energy:eee_mean2, spectrum:spectrum_rebinned}
