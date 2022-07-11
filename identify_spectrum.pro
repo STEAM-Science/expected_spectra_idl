@@ -1,4 +1,4 @@
-pro identify_spectrum, spectrum_file, time=time, distance=distance, detector_select=detector_select, aperture=aperture, resolution=resolution
+pro identify_spectrum, spectrum_file, days = days, time=time, distance=distance, detector_select=detector_select, aperture=aperture, resolution=resolution
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Read mystery spectrum
   if TYPENAME(spectrum_file) NE 'STRING' THEN BEGIN
@@ -31,10 +31,9 @@ pro identify_spectrum, spectrum_file, time=time, distance=distance, detector_sel
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Gather element spectra
   
-  el_list = ['Fe', 'Ba', 'Zn', 'Am']
+  el_list = ['Fe', 'Ba', 'Zn', 'Am', 'Cd']
   el_struct = REPLICATE({spectrum,element:'Fe',energy:make_array(1024,/double,value=1),$
     counts:make_array(1024,/double,value=0)},n_elements(el_list))
-  
 
   FOREACH element, el_struct, index DO BEGIN
     
@@ -46,6 +45,7 @@ pro identify_spectrum, spectrum_file, time=time, distance=distance, detector_sel
     if not keyword_set(distance) then distance=1. ;gaps in testing rig are 7mm
   
     if not keyword_set(time) then time = 1.
+    
   
     CASE detector_select of 
 
@@ -86,7 +86,7 @@ pro identify_spectrum, spectrum_file, time=time, distance=distance, detector_sel
     end
     
     ENDCASE
-    
+       
     spectrum = area*make_isotope_spectra(edges, element = element, activity = activity, time = time)/(4.*!dpi*distance^2)
     response = instrument_response(eee_mean, detector_select = detector_select, filter_thick = filter_thick,$
       aluminum = aluminum, polyimide = polyimide)
@@ -96,6 +96,7 @@ pro identify_spectrum, spectrum_file, time=time, distance=distance, detector_sel
   
     smooth_spectrum = gaussfold(eee_mean, spectrum*response*air, resolution, /nointerp)
   
+  ; add exponential decay to this one
     ssw_rebinner, smooth_spectrum, eee, spectrum_rebinned, eee2
     
     el_struct[index].energy = eee_mean2

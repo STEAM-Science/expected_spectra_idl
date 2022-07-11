@@ -6,19 +6,20 @@ pro smooth_isotope_spectrum, days = days, time = time, output_spectrum = output_
   
   if not keyword_set(time) then time = 1.
   
+  if not keyword_set(days) then days = 1.
+  
   if not keyword_set(element) then begin
     message, /info, 'Please specify element'
   endif
   
-  if not keyword_set(days) then days = 1.
-  
   ; write a general function for this
   
+  ; exponential decay
   CASE element of
     'Fe': begin
       actual_activity = activity*exp(-0.00070334569*days)
       end
-    'Be': begin
+    'Ba': begin
       actual_activity = activity*exp(-0.00017915409*days)
       end
     'Zn': begin
