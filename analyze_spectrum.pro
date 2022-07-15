@@ -1,4 +1,4 @@
-pro analyze_spectrum, spectrum_file, time=time, distance=distance, detector_select=detector_select, aperture=aperture, resolution=resolution
+pro analyze_spectrum, spectrum_file, input_element = input_element, time=time, distance=distance, detector_select=detector_select, aperture=aperture, resolution=resolution
 
   ; read in spectrum data file
   if TYPENAME(spectrum_file) NE 'STRING' THEN BEGIN
@@ -22,10 +22,10 @@ pro analyze_spectrum, spectrum_file, time=time, distance=distance, detector_sele
   FREE_LUN, lun
 
   ; make spectrum array with 1 less data point, and add together value at neighboring edges to get values
-  spectrum_raw = fltarr(n_elements(array)-1)
+  measured_spectrum_raw = fltarr(n_elements(array)-1)
 
   FOR i=0,n_elements(array)-2 DO BEGIN
-    spectrum_raw[i] = array[i]+array[i+1]
+    measured_spectrum_raw[i] = array[i]+array[i+1]
   ENDFOR
   
   ; create element spectra for comparison do i need this section? i confused myself
@@ -101,5 +101,37 @@ pro analyze_spectrum, spectrum_file, time=time, distance=distance, detector_sele
     el_struct[index].counts = spectrum_rebinned
 
   ENDFOREACH
+  
+  ; compare spectra
+  measured_spectrum = measured_spectrum_raw/max(measured_spectrum_raw)
+  
+  ; set element
+  if input_element eq 'Fe' then el_index = 0.
+  if input_element eq 'Ba' then el_index = 1. 
+  if input_element eq 'Zn' then el_index = 2. 
+  if input_element eq 'Am' then el_index = 3. 
+  if input_element eq 'Cd' then el_index = 4. 
+
+  print, input_element
+  print, el_index
+  
+  ; normalize
+  comp_spectrum = el_struct[el_index].counts;/max(el_struct[el_index].counts)
+  ;error = sqrt(total((measured_spectrum-comp_spectrum)^2))
+  
+  ; calculate gain and offset
+  calc_gain = (max(measured_spectrum)-min(measured_spectrum))/(max(comp_spectrum)-min(comp_spectrum))
+  ;calc_offset = ((max(measured_spectrum)-min(measured_spectrum))-(max(comp_spectrum)-min(comp_spectrum)))/2
+  ;calc_offset = mean(comp_spectrum)-mean(measured_spectrum)
+  calc_offset = comp_spectrum[-1]-measured_spectrum[-1]
+  
+  calc_two = (measured_spectrum - calc_offset)/calc_gain
+  
+  print, 'Calculated gain is: ', calc_gain
+  print, 'Calculated offset is: ', calc_offset
+  
+  ;plot, measured_spectrum, xrange = [0,50], yrange = [0,1], COLOR=cgColor("Red")
+  plot, calc_two, COLOR=cgColor("Blue")
+  oplot, comp_spectrum, color=cgColor('Red')
 
 end
